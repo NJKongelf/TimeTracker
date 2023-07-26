@@ -62,7 +62,7 @@
                                  </font></TextField>
                                <TextField fx:id="trackedTime" blendMode="COLOR_BURN" cache="true" cacheShape="false" centerShape="false" depthTest="DISABLE" editable="false" focusTraversable="false" layoutX="330.0" layoutY="160.0" prefHeight="50.0" prefWidth="190.0" scaleShape="false">
                                    <font>
-                                       <Font name="System Bold Italic" size="14.0" />
+                                       <Font name="System Bold Italic" size="36.0" />
                                    </font></TextField>
                               <Label fx:id="timeWorked" layoutX="330.0" layoutY="130.0" text="Label" textFill="#ec1111" visible="false" />
                            </children>
