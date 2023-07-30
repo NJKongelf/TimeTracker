@@ -133,16 +133,17 @@ public class Controller {
         });
     }
     private void printToFile() throws IOException {
-        FileWriter fileWriter = new FileWriter("Timetracked_"
-                +LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))+".txt");
-        for (LocalDateTime s: timelist) {
-            fileWriter.write(s.format(DateTimeFormatter.ofPattern("HH:mm:ss"))+"\n");
+        if (timelist.size() > 0) {
+            FileWriter fileWriter = new FileWriter("Timetracked_"
+                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
+            for (LocalDateTime s : timelist) {
+                fileWriter.write(s.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\n");
+            }
+            fileWriter.write("Tracked time: " + LocalDateTime.ofEpochSecond(calculatedTime.get(), 0, ZoneOffset.UTC)
+                    .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            fileWriter.flush();
+            fileWriter.close();
         }
-        fileWriter.write("Tracked time: "+LocalDateTime.ofEpochSecond(calculatedTime.get(), 0, ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-        fileWriter.flush();
-        fileWriter.close();
-
     }
 
 }
