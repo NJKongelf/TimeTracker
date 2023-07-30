@@ -1,11 +1,7 @@
 package se.njkongelf.controller;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.Property;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -14,8 +10,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 
-import java.io.*;
-import java.net.URI;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +45,10 @@ public class Controller {
     private ObservableList<String> listview;
     private SimpleStringProperty clockString;
     private SimpleStringProperty trackedTimeString;
-    public Controller() {}
+
+    public Controller() {
+    }
+
     public void initialize() {
         timelist = new ArrayList<>();
         listview = FXCollections.observableArrayList();
@@ -62,6 +61,7 @@ public class Controller {
         clock.textProperty().bindBidirectional(clockString);
         trackedTime.textProperty().bindBidirectional(trackedTimeString);
     }
+
     public void handleButton(ActionEvent event) {
         timelist.add(LocalDateTime.now());
         listview.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
@@ -71,6 +71,7 @@ public class Controller {
         label.scrollTo(items);
         label.refresh();
     }
+
     public void exitOnclick(ActionEvent event) {
         try {
             printToFile();
@@ -82,6 +83,7 @@ public class Controller {
         threadpool.shutdownNow();
         stage.close();
     }
+
     protected void startClock(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override
@@ -93,9 +95,11 @@ public class Controller {
             }
         });
     }
+
     protected void updateClock() {
         clockString.set(currentTime());
     }
+
     private void starWorktime() {
 
         timeWorked.setVisible(true);
@@ -108,15 +112,19 @@ public class Controller {
             runtrackedTime.set(true);
         }
     }
+
     protected void updateWorktime(String time) {
         trackedTimeString.set(time);
     }
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
+
     private String currentTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
+
     private void workTime(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override
@@ -132,6 +140,7 @@ public class Controller {
             }
         });
     }
+
     private void printToFile() throws IOException {
         if (timelist.size() > 0) {
             FileWriter fileWriter = new FileWriter("Timetracked_"
