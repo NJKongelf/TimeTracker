@@ -9,13 +9,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
-import javafx.util.converter.LongStringConverter;
+import se.njkongelf.model.Model;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -40,7 +36,6 @@ public class Controller {
     @FXML
     private Spinner<Integer> workingHours;
     private Property<SpinnerValueFactory<Integer>> workingHoursValueProperty;
-    private Path path;
     private SpinnerValueFactory<Integer> workingHoursValue;
     private List<LocalDateTime> timelist;
     private AtomicBoolean runtrackedTime;
@@ -50,11 +45,14 @@ public class Controller {
     private ObservableList<String> listview;
     private SimpleStringProperty clockString;
     private SimpleStringProperty trackedTimeString;
+    private Model model;
 
-    public Controller() {
+    public Controller(Model model) {
+        this.model = model;
     }
 
     public void initialize() {
+        model.setController(this);
         timelist = new ArrayList<>();
         listview = FXCollections.observableArrayList();
         label.itemsProperty().setValue(listview);
@@ -66,11 +64,8 @@ public class Controller {
         clock.textProperty().bindBidirectional(clockString);
         trackedTime.textProperty().bindBidirectional(trackedTimeString);
         try {
-            readBackupFile();
+            model.readBackupFile(timelist, listview, calculatedTime, trackedTime);
         } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        } catch (URISyntaxException e) {
-//            throw new RuntimeException(e);
         }
     }
 
@@ -87,8 +82,8 @@ public class Controller {
     public void exitOnclick(ActionEvent event) {
 
         try {
-            printToFile();
-            backup_File();
+            model.printToFile(timelist, calculatedTime);
+            model.backup_File(timelist);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -114,7 +109,7 @@ public class Controller {
         clockString.set(currentTime());
     }
 
-    private void starWorktime() {
+    public void starWorktime() {
 
         timeWorked.setVisible(true);
         if (start_stop.getText().equals("Start")) {
@@ -153,101 +148,5 @@ public class Controller {
                 return null;
             }
         });
-    }
-
-    private void printToFile() throws IOException {
-        if (timelist.size() > 0) {
-            FileWriter fileWriter = new FileWriter("Timetracked_"
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
-            for (LocalDateTime s : timelist) {
-                fileWriter.write(s.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\n");
-            }
-            fileWriter.write("Tracked time: " + LocalDateTime.ofEpochSecond(calculatedTime.get(), 0, ZoneOffset.UTC)
-                    .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            fileWriter.flush();
-            fileWriter.close();
-        }
-    }
-
-    private void backup_File() throws IOException {
-        if (timelist.size() > 0) {
-            FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + File.separator + "Timetracker" + File.separator + "Timetracked_"
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".ttb");
-            for (LocalDateTime s : timelist) {
-                fileWriter.write(s.toEpochSecond(ZoneOffset.UTC) + "\n");
-            }
-            fileWriter.flush();
-            fileWriter.close();
-        }
-    }
-
-    private void readBackupFile() throws IOException {
-        String file = System.getProperty("user.home")
-                + File.separator
-                + "Timetracker"
-                + File.separator
-                + "Timetracked_"
-                + LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
-                + ".ttb";
-        if (Files.exists(Paths.get(file), LinkOption.NOFOLLOW_LINKS)) {
-            FileReader stream = new FileReader(file);
-            BufferedReader streamReader = new BufferedReader(stream);
-            List<String> stringList = streamReader.lines().toList();
-            stringList.stream().forEach(s -> {
-                LongStringConverter longStringConverter = new LongStringConverter();
-                timelist.add(LocalDateTime
-                        .ofEpochSecond(longStringConverter.fromString(s), 0, ZoneOffset.UTC));
-            });
-            timelist.stream().forEach(time -> {
-                listview.add(time
-                        .format(DateTimeFormatter
-                                .ofPattern("HH:mm:ss YYYY-MM-dd")));
-            });
-            long time = 0;
-
-            if (timelist.size() > 0) {
-                calculatedTime.set(time);
-                starWorktime();
-            }
-            if (timelist.size() % 2 == 0) {
-                time=calcEvenlist(time);
-                calculatedTime.set(time);
-                starWorktime();
-                trackedTime.setText(LocalDateTime
-                        .ofEpochSecond(time, 0, ZoneOffset.UTC)
-                        .format(DateTimeFormatter
-                                .ofPattern("HH:mm:ss")));
-            }else{
-                time=calcUnEvenList(time);
-                calculatedTime.set(time);
-                trackedTime.setText(LocalDateTime
-                        .ofEpochSecond(time, 0, ZoneOffset.UTC)
-                        .format(DateTimeFormatter
-                                .ofPattern("HH:mm:ss")));
-            }
-        }
-    }
-    private long calcEvenlist(long time){
-        for (int i = timelist.size(); i >= 2; i = i - 2) {
-            long a = timelist.get(i - 1).toEpochSecond(ZoneOffset.UTC);
-            long b = timelist.get(i - 2).toEpochSecond(ZoneOffset.UTC);
-            time = time + (a - b);
-        }
-        return time;
-    }
-    private long calcUnEvenList(long time){
-        if (timelist.size() >1){
-            time=LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)-timelist.get(timelist.size()-1).toEpochSecond(ZoneOffset.UTC);
-            for (int i = timelist.size()-1; i >= 2; i = i - 2) {
-                long a = timelist.get(i - 1).toEpochSecond(ZoneOffset.UTC);
-                long b = timelist.get(i - 2).toEpochSecond(ZoneOffset.UTC);
-                time = time + (a - b);
-            }
-        }else{
-            time=LocalDateTime.now()
-                    .toEpochSecond(ZoneOffset.UTC)-timelist.get(timelist.size()-1).toEpochSecond(ZoneOffset.UTC);
-        }
-        return time;
     }
 }
