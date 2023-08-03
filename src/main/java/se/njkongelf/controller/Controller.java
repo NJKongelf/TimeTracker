@@ -1,6 +1,7 @@
 package se.njkongelf.controller;
 
 import javafx.beans.property.Property;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,7 +11,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import se.njkongelf.model.Model;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -35,7 +35,7 @@ public class Controller {
     private TextField clock;
     @FXML
     private Spinner<Integer> workingHours;
-    private Property<SpinnerValueFactory<Integer>> workingHoursValueProperty;
+    private Property<Integer> workingHoursValueProperty;
     private SpinnerValueFactory<Integer> workingHoursValue;
     private List<LocalDateTime> timelist;
     private AtomicBoolean runtrackedTime;
@@ -46,29 +46,32 @@ public class Controller {
     private SimpleStringProperty clockString;
     private SimpleStringProperty trackedTimeString;
     private Model model;
-
     public Controller(Model model) {
         this.model = model;
     }
-
     public void initialize() {
+        clockString = new SimpleStringProperty();
+        clock.textProperty().bindBidirectional(clockString);
         model.setController(this);
         timelist = new ArrayList<>();
         listview = FXCollections.observableArrayList();
         label.itemsProperty().setValue(listview);
-        startClock(threadpool);
+        workingHoursValue = new SpinnerValueFactory.IntegerSpinnerValueFactory(0,24);
+        workingHoursValueProperty = new SimpleIntegerProperty().asObject();
+        workingHoursValueProperty.setValue(Integer.valueOf(8));
+        workingHours.setValueFactory(workingHoursValue);
+        workingHoursValue.valueProperty().bindBidirectional(workingHoursValueProperty);
+        workingHoursValueProperty.addListener(model.spinngerListner());
         calculatedTime = new AtomicLong(0);
         runtrackedTime = new AtomicBoolean(false);
         trackedTimeString = new SimpleStringProperty();
-        clockString = new SimpleStringProperty();
-        clock.textProperty().bindBidirectional(clockString);
         trackedTime.textProperty().bindBidirectional(trackedTimeString);
         try {
             model.readBackupFile(timelist, listview, calculatedTime, trackedTime);
         } catch (IOException e) {
         }
+        startClock(threadpool);
     }
-
     public void handleButton(ActionEvent event) {
         timelist.add(LocalDateTime.now());
         listview.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
@@ -78,7 +81,6 @@ public class Controller {
         label.scrollTo(items);
         label.refresh();
     }
-
     public void exitOnclick(ActionEvent event) {
 
         try {
@@ -92,7 +94,6 @@ public class Controller {
         threadpool.shutdownNow();
         stage.close();
     }
-
     protected void startClock(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override
@@ -104,11 +105,9 @@ public class Controller {
             }
         });
     }
-
     protected void updateClock() {
         clockString.set(currentTime());
     }
-
     public void starWorktime() {
 
         timeWorked.setVisible(true);
@@ -121,19 +120,15 @@ public class Controller {
             runtrackedTime.set(true);
         }
     }
-
     protected void updateWorktime(String time) {
         trackedTimeString.set(time);
     }
-
     public void setStage(Stage stage) {
         this.stage = stage;
     }
-
     private String currentTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
-
     private void workTime(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override

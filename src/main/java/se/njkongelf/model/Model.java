@@ -1,5 +1,7 @@
 package se.njkongelf.model;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.util.converter.LongStringConverter;
@@ -123,5 +125,16 @@ public class Model {
                                 .ofPattern("HH:mm:ss")));
             }
         }
+    }
+    public ChangeListener<Integer> spinngerListner(){
+        return new ChangeListener<Integer>() {
+            @Override
+            public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
+                System.out.println(observableValue.getValue());
+            }
+        };
+    }
+    private void test(){
+
     }
 }
