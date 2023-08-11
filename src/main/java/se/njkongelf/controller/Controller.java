@@ -140,6 +140,7 @@ public class Controller {
             start_stop.setText("Stop");
             runtrackedTime.set(false);
             workTime(threadpool);
+
         } else {
             start_stop.setText("Start");
             runtrackedTime.set(true);
@@ -163,6 +164,7 @@ public class Controller {
             @Override
             protected Object call() throws Exception {
                 while (!runtrackedTime.get()) {
+                    setCalculatedOverTime();
                     String s = LocalDateTime.ofEpochSecond(calculatedTime.get(), 0, ZoneOffset.UTC)
                             .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
                     updateWorktime(s);
@@ -174,7 +176,7 @@ public class Controller {
         });
     }
 
-    private void setCalculatedOverTime(){
+    protected void setCalculatedOverTime(){
       Integer hours = workingHoursValueProperty.getValue();
       Integer seconds = (hours*60)*60;
 
@@ -182,8 +184,12 @@ public class Controller {
           long time = calculatedTime.get() - seconds;
           runOverTime.set(true);
           overTimeString.set(LocalDateTime.ofEpochSecond(time,0,ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+          label_OverTime.setVisible(true);
+          overTime.setVisible(true);
       }else{
           runOverTime.set(false);
+          label_OverTime.setVisible(false);
+          overTime.setVisible(false);
       }
     }
 }
