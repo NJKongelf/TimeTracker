@@ -43,7 +43,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" >
+<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
       <children>
@@ -83,6 +83,7 @@
                            <children>
                               <Spinner fx:id="workingHours" editable="true" layoutX="184.0" layoutY="90.0" prefHeight="26.0" prefWidth="62.0" />
                               <Label layoutX="184.0" layoutY="55.0" text="Working hours" />
+                              <Button fx:id="savePath" layoutX="429.0" layoutY="205.0" mnemonicParsing="false" onAction="#saveFileDialog" text="Button" />
                            </children>
                         </AnchorPane>
                   </content>

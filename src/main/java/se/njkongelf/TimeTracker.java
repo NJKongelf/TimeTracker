@@ -32,6 +32,7 @@ public class TimeTracker extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         scene = new Scene(loadFXML("Main"));
+        stage.setTitle("Time Tracker");
         stage.setScene(scene);
         controller.setStage(stage);
         stage.show();

@@ -9,9 +9,11 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import se.njkongelf.model.Model;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -25,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Controller {
+    @FXML
+    private Button savePath;
     @FXML
     private Button start_stop;
     @FXML
@@ -176,6 +180,26 @@ public class Controller {
         });
     }
 
+    public void saveFileDialog(ActionEvent actionEvent) {
+        //Show a file dialog that returns a selected file for opening or null if no file was selected.
+        FileChooser fileChooser = new FileChooser ();
+        fileChooser.setTitle ("Spara fil");
+        fileChooser.setInitialDirectory (new File(System.getProperty ("user.home") + File.separator + "Documents"));
+        fileChooser.getExtensionFilters ().addAll (
+                new FileChooser.ExtensionFilter ("TXT", "*.txt"));
+       // Filehandler filehandler = new Filehandler ();
+        File        path        = fileChooser.showSaveDialog (stage);
+
+
+        //Path can be null if abort was selected
+        if (path != null) {
+            //We have a valid File object. Use with FileReader or FileWriter
+            System.out.println (path.getAbsolutePath ());
+          //  filehandler.saveFileSVG (model, path, (int) canvas.getWidth (), (int) canvas.getHeight ());
+        } else {
+            System.out.println ("no file");
+        }
+    }
     protected void setCalculatedOverTime(){
       Integer hours = workingHoursValueProperty.getValue();
       Integer seconds = (hours*60)*60;
