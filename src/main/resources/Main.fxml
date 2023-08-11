@@ -43,7 +43,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
+<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" >
   <children>
     <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
       <children>
@@ -57,7 +57,7 @@
                                <Label layoutX="289.0" layoutY="22.0" text="Current Time" />
                               <Button fx:id="start_stop" layoutX="367.0" layoutY="293.0" mnemonicParsing="false" onAction="#handleButton" prefHeight="37.0" prefWidth="66.0" text="Start" />
                               <Button layoutX="458.0" layoutY="292.0" mnemonicParsing="false" onAction="#exitOnclick" prefHeight="38.0" prefWidth="66.0" text="close" />
-                              <ListView fx:id="label" layoutX="14.0" layoutY="14.0" prefHeight="231.0" prefWidth="206.0" />
+                              <ListView fx:id="listView" layoutX="14.0" layoutY="14.0" prefHeight="231.0" prefWidth="206.0" />
                               <TextField fx:id="clock" blendMode="COLOR_BURN" cache="true" cacheShape="false" centerShape="false" depthTest="DISABLE" editable="false" focusTraversable="false" layoutX="248.0" layoutY="55.0" prefHeight="21.0" prefWidth="150.0" scaleShape="false">
                                  <font>
                                     <Font name="System Bold" size="24.0" />
@@ -66,6 +66,12 @@
                                    <font>
                                        <Font name="System Bold Italic" size="24.0" />
                                    </font></TextField>
+                              <TextField fx:id="overTime" blendMode="COLOR_BURN" cache="true" cacheShape="false" centerShape="false" depthTest="DISABLE" editable="false" focusTraversable="false" layoutX="244.0" layoutY="158.0" prefHeight="56.0" prefWidth="158.0" scaleShape="false" visible="false">
+                                 <font>
+                                    <Font name="System Bold Italic" size="24.0" />
+                                 </font>
+                              </TextField>
+                              <Label fx:id="label_OverTime" layoutX="289.0" layoutY="121.0" text="OverTime" textFill="#1013ec" visible="false" />
 
                            </children>
                         </AnchorPane>
@@ -75,8 +81,8 @@
                   <content>
                     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <Spinner fx:id="workingHours" editable="true" layoutX="201.0" layoutY="186.0" prefHeight="26.0" prefWidth="62.0" />
-                              <Label layoutX="201.0" layoutY="151.0" text="Working hours" />
+                              <Spinner fx:id="workingHours" editable="true" layoutX="184.0" layoutY="90.0" prefHeight="26.0" prefWidth="62.0" />
+                              <Label layoutX="184.0" layoutY="55.0" text="Working hours" />
                            </children>
                         </AnchorPane>
                   </content>

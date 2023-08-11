@@ -15,10 +15,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Model {
     private Controller controller;
+    private Properties properties;
+
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+    }
 
     public void setController(Controller controller) {
         this.controller = controller;
@@ -130,11 +136,31 @@ public class Model {
         return new ChangeListener<Integer>() {
             @Override
             public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
-                System.out.println(observableValue.getValue());
+                properties.setProperty("workinghours",observableValue.getValue().toString());
             }
         };
     }
-    private void test(){
+
+    public Properties readInSettingsFile(String path){
+        Properties prop = new Properties();
+        try {
+            prop.load(new FileInputStream(path));
+        } catch (FileNotFoundException e) {
+//            throw new RuntimeException(e);
+        } catch (IOException e) {
+//            throw new RuntimeException(e);
+        }
+        return prop;
+    }
+    public void saveSettings(String path){
+        try {
+            FileOutputStream fos = new FileOutputStream(path);
+            properties.store(fos,"Saving settings");
+            fos.flush();
+            fos.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 }

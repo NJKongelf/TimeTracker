@@ -11,12 +11,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import se.njkongelf.model.Model;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,62 +30,82 @@ public class Controller {
     @FXML
     private Label timeWorked;
     @FXML
-    private ListView<String> label;
+    private Label label_OverTime;
+    @FXML
+    private ListView<String> listView;
     @FXML
     private TextField trackedTime;
     @FXML
     private TextField clock;
+    @FXML
+    private TextField overTime;
     @FXML
     private Spinner<Integer> workingHours;
     private Property<Integer> workingHoursValueProperty;
     private SpinnerValueFactory<Integer> workingHoursValue;
     private List<LocalDateTime> timelist;
     private AtomicBoolean runtrackedTime;
+    private AtomicBoolean runOverTime;
     private Stage stage;
     private AtomicLong calculatedTime;
+    private AtomicLong calculatedOverTime;
     private ExecutorService threadpool = Executors.newFixedThreadPool(2);
-    private ObservableList<String> listview;
+    private ObservableList<String> listviewObserv;
     private SimpleStringProperty clockString;
+    private SimpleStringProperty overTimeString;
     private SimpleStringProperty trackedTimeString;
     private Model model;
+    private Properties properties;
+    private String settingsfile;
+
     public Controller(Model model) {
         this.model = model;
     }
+
     public void initialize() {
+        settingsfile = "conf/settings.properties";
+        properties = model.readInSettingsFile(settingsfile);
+        model.setProperties(properties);
         clockString = new SimpleStringProperty();
         clock.textProperty().bindBidirectional(clockString);
+        overTimeString = new SimpleStringProperty();
+        overTime.textProperty().bindBidirectional(overTimeString);
         model.setController(this);
         timelist = new ArrayList<>();
-        listview = FXCollections.observableArrayList();
-        label.itemsProperty().setValue(listview);
-        workingHoursValue = new SpinnerValueFactory.IntegerSpinnerValueFactory(0,24);
+        listviewObserv = FXCollections.observableArrayList();
+        listView.itemsProperty().setValue(listviewObserv);
+        workingHoursValue = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 24);
         workingHoursValueProperty = new SimpleIntegerProperty().asObject();
-        workingHoursValueProperty.setValue(Integer.valueOf(8));
+        workingHoursValueProperty.setValue(Integer.valueOf(properties.getProperty("workinghours")));
         workingHours.setValueFactory(workingHoursValue);
         workingHoursValue.valueProperty().bindBidirectional(workingHoursValueProperty);
         workingHoursValueProperty.addListener(model.spinngerListner());
         calculatedTime = new AtomicLong(0);
         runtrackedTime = new AtomicBoolean(false);
+        runOverTime = new AtomicBoolean(false);
         trackedTimeString = new SimpleStringProperty();
         trackedTime.textProperty().bindBidirectional(trackedTimeString);
         try {
-            model.readBackupFile(timelist, listview, calculatedTime, trackedTime);
+            model.readBackupFile(timelist, listviewObserv, calculatedTime, trackedTime);
         } catch (IOException e) {
         }
         startClock(threadpool);
+        setCalculatedOverTime();
     }
+
     public void handleButton(ActionEvent event) {
         timelist.add(LocalDateTime.now());
-        listview.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
-        //   if(!(size % 2 == 0))
+        listviewObserv.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
         starWorktime();
-        int items = label.getItems().size();
-        label.scrollTo(items);
-        label.refresh();
+        int items = listView.getItems().size();
+        listView.scrollTo(items);
+        listView.refresh();
     }
+
     public void exitOnclick(ActionEvent event) {
 
         try {
+            model.saveSettings(settingsfile);
             model.printToFile(timelist, calculatedTime);
             model.backup_File(timelist);
         } catch (IOException e) {
@@ -94,6 +116,7 @@ public class Controller {
         threadpool.shutdownNow();
         stage.close();
     }
+
     protected void startClock(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override
@@ -105,9 +128,11 @@ public class Controller {
             }
         });
     }
+
     protected void updateClock() {
         clockString.set(currentTime());
     }
+
     public void starWorktime() {
 
         timeWorked.setVisible(true);
@@ -120,15 +145,19 @@ public class Controller {
             runtrackedTime.set(true);
         }
     }
+
     protected void updateWorktime(String time) {
         trackedTimeString.set(time);
     }
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
+
     private String currentTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
+
     private void workTime(ExecutorService threadpool) {
         threadpool.submit(new Task() {
             @Override
@@ -143,5 +172,18 @@ public class Controller {
                 return null;
             }
         });
+    }
+
+    private void setCalculatedOverTime(){
+      Integer hours = workingHoursValueProperty.getValue();
+      Integer seconds = (hours*60)*60;
+
+      if(calculatedTime.get() >= seconds){
+          long time = calculatedTime.get() - seconds;
+          runOverTime.set(true);
+          overTimeString.set(LocalDateTime.ofEpochSecond(time,0,ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+      }else{
+          runOverTime.set(false);
+      }
     }
 }
