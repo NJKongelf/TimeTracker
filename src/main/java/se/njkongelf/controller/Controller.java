@@ -185,8 +185,12 @@ public class Controller {
         FileChooser fileChooser = new FileChooser ();
         fileChooser.setTitle ("Spara fil");
         fileChooser.setInitialDirectory (new File(System.getProperty ("user.home") + File.separator + "Documents"));
+        fileChooser.setInitialFileName("Timetracked_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
         fileChooser.getExtensionFilters ().addAll (
-                new FileChooser.ExtensionFilter ("TXT", "*.txt"));
+                new FileChooser.ExtensionFilter ("TXT", "*.txt")
+//                , new FileChooser.ExtensionFilter ("Excelfile", "*.xlsx")
+        );
        // Filehandler filehandler = new Filehandler ();
         File        path        = fileChooser.showSaveDialog (stage);
 

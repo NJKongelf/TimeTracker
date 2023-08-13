@@ -5,6 +5,11 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.util.converter.LongStringConverter;
+//import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+//import org.apache.poi.ss.usermodel.Cell;
+//import org.apache.poi.ss.usermodel.Row;
+//import org.apache.poi.ss.usermodel.Sheet;
+//import org.apache.poi.ss.usermodel.Workbook;
 import se.njkongelf.controller.Controller;
 
 import java.io.*;
@@ -163,5 +168,19 @@ public class Model {
         }
 
     }
+
+
+    /* Experiment to export time tracked to Excel file  */
+//    public void saveExcel() throws IOException {
+//        // https://poi.apache.org/components/spreadsheet/quick-guide.html#NewWorkbook
+//        Workbook wb = new HSSFWorkbook();
+//        OutputStream outputStream = new FileOutputStream("file.xls");
+//        Sheet s = wb.createSheet();
+//        Row r = s.createRow();
+//
+//        wb.write(outputStream);
+//        wb.close();
+//        outputStream.close();
+//    }
 
 }
