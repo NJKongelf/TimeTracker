@@ -3,7 +3,10 @@ package se.njkongelf.model;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.converter.LongStringConverter;
 //import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 //import org.apache.poi.ss.usermodel.Cell;
@@ -168,7 +171,30 @@ public class Model {
         }
 
     }
+    public void saveFileDialog(Stage stage) {
+        //Show a file dialog that returns a selected file for opening or null if no file was selected.
+        FileChooser fileChooser = new FileChooser ();
+        fileChooser.setTitle ("Spara fil");
+        fileChooser.setInitialDirectory (new File(System.getProperty ("user.home") + File.separator + "Documents"));
+        fileChooser.setInitialFileName("Timetracked_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
+        fileChooser.getExtensionFilters ().addAll (
+                new FileChooser.ExtensionFilter ("TXT", "*.txt")
+//                , new FileChooser.ExtensionFilter ("Excelfile", "*.xlsx")
+        );
+        // Filehandler filehandler = new Filehandler ();
+        File        path        = fileChooser.showSaveDialog (stage);
 
+
+        //Path can be null if abort was selected
+        if (path != null) {
+            //We have a valid File object. Use with FileReader or FileWriter
+            System.out.println (path.getAbsolutePath ());
+            //  filehandler.saveFileSVG (model, path, (int) canvas.getWidth (), (int) canvas.getHeight ());
+        } else {
+            System.out.println ("no file");
+        }
+    }
 
     /* Experiment to export time tracked to Excel file  */
 //    public void saveExcel() throws IOException {

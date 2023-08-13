@@ -181,28 +181,7 @@ public class Controller {
     }
 
     public void saveFileDialog(ActionEvent actionEvent) {
-        //Show a file dialog that returns a selected file for opening or null if no file was selected.
-        FileChooser fileChooser = new FileChooser ();
-        fileChooser.setTitle ("Spara fil");
-        fileChooser.setInitialDirectory (new File(System.getProperty ("user.home") + File.separator + "Documents"));
-        fileChooser.setInitialFileName("Timetracked_"
-                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
-        fileChooser.getExtensionFilters ().addAll (
-                new FileChooser.ExtensionFilter ("TXT", "*.txt")
-//                , new FileChooser.ExtensionFilter ("Excelfile", "*.xlsx")
-        );
-       // Filehandler filehandler = new Filehandler ();
-        File        path        = fileChooser.showSaveDialog (stage);
-
-
-        //Path can be null if abort was selected
-        if (path != null) {
-            //We have a valid File object. Use with FileReader or FileWriter
-            System.out.println (path.getAbsolutePath ());
-          //  filehandler.saveFileSVG (model, path, (int) canvas.getWidth (), (int) canvas.getHeight ());
-        } else {
-            System.out.println ("no file");
-        }
+    model.saveFileDialog(stage);
     }
     protected void setCalculatedOverTime(){
       Integer hours = workingHoursValueProperty.getValue();
