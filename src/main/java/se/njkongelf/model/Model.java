@@ -22,6 +22,7 @@ public class Model {
     private Controller controller;
     private Properties properties;
 
+
     public void setProperties(Properties properties) {
         this.properties = properties;
     }
@@ -145,8 +146,6 @@ public class Model {
         Properties prop = new Properties();
         try {
             prop.load(new FileInputStream(path));
-        } catch (FileNotFoundException e) {
-//            throw new RuntimeException(e);
         } catch (IOException e) {
 //            throw new RuntimeException(e);
         }

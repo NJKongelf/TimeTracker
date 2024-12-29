@@ -62,14 +62,17 @@ public class Controller {
     private Properties properties;
     private String settingsfile;
 
+
     public Controller(Model model) {
         this.model = model;
+
     }
 
     public void initialize() {
         settingsfile = "conf/settings.properties";
         properties = model.readInSettingsFile(settingsfile);
         model.setProperties(properties);
+
         clockString = new SimpleStringProperty();
         clock.textProperty().bindBidirectional(clockString);
         overTimeString = new SimpleStringProperty();

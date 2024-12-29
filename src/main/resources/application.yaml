@@ -1,0 +1,13 @@
+spring:
+  data:
+    mongodb:
+#      database: timetracker
+#      username: root
+#      password: dev
+#      host: localhost
+#      port: 27017
+      uri: "mongodb://root:dev@127.0.0.1/timetracker"
+
+
+
+#            mongodb://admin:password@localhost:27017/baeldung

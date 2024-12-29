@@ -1,47 +1,31 @@
 package se.njkongelf;
 
-import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import se.njkongelf.controller.Controller;
-import se.njkongelf.model.Model;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.context.ConfigurableApplicationContext;
+@EnableAutoConfiguration(exclude={MongoAutoConfiguration.class})
+@SpringBootApplication
+public class TimeTracker {
 
-import java.io.IOException;
+  private static ConfigurableApplicationContext context;
 
-public class TimeTracker extends Application {
-    private Controller controller;
-    private Scene scene;
-    private Model model;
+  public static void main(String[] args) {
+    Thread springThread = new Thread(() -> {JavaFxInit.main(args);
+    });
+    springThread.setDaemon(true); // Gör tråden bakgrundsprocess
+    springThread.start();
 
-    public static void main(String[] args) {
-        launch();
-    }
+      context = SpringApplication.run(TimeTracker.class, args);
 
-    private Parent loadFXML(String fxml) throws IOException {
-        Model model = new Model();
-        FXMLLoader fxmlLoader = new FXMLLoader();
-        fxmlLoader.setController(new Controller(model));
-        controller = fxmlLoader.getController();
-        fxmlLoader.setLocation(TimeTracker.class.getResource("/" + fxml + ".fxml"));
-        return fxmlLoader.load();
-    }
 
-    @Override
-    public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("Main"));
-        stage.setTitle("Time Tracker");
-        stage.setScene(scene);
-        controller.setStage(stage);
-        stage.show();
-        stage.setAlwaysOnTop(true);
-    }
 
-    @Override
-    public void stop() throws Exception {
-        super.stop();
-        controller.exitOnclick(new ActionEvent());
-    }
+
+
+
+  }
+  public static ConfigurableApplicationContext getContext() {
+    return context;
+  }
 }
