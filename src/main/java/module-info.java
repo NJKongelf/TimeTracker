@@ -13,6 +13,7 @@ module TimeTracker {
   requires org.mongodb.driver.core;
   requires spring.beans;
   requires com.querydsl.core;
+  requires spring.tx;
   opens se.njkongelf.db.entity to spring.core,spring.data.commons;
   opens se.njkongelf.db.services to spring.core, spring.beans;
   opens se.njkongelf.controller to javafx.fxml;

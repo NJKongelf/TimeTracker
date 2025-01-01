@@ -1,13 +1,5 @@
 spring:
   data:
     mongodb:
-#      database: timetracker
-#      username: root
-#      password: dev
-#      host: localhost
-#      port: 27017
-      uri: "mongodb://root:dev@127.0.0.1/timetracker?authSource=admin"
+      uri: "mongodb://root:dev@192.168.1.122/timetracker?authSource=admin"
 
-
-
-#            mongodb://admin:password@localhost:27017/baeldung

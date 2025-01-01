@@ -7,8 +7,6 @@ import se.njkongelf.db.entity.TimeSheet;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -20,9 +18,15 @@ public class TimeSheetService {
     return repository.findByWorkday(workday);
   }
 
-  public void createTimeSheet() {
+  public TimeSheet createTimeSheet() {
     TimeSheet sheet = new TimeSheet();
     sheet.setWorkday(LocalDate.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")));
+//    sheet.setTimeStamps(new ArrayList<>());
+    repository.save(sheet);
+    return sheet;
+  }
+
+  public void updateTimeSheet(TimeSheet sheet) {
     repository.save(sheet);
   }
 }

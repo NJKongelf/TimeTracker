@@ -1,5 +1,7 @@
 package se.njkongelf.controller;
 
+
+
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +15,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.springframework.context.ConfigurableApplicationContext;
 import se.njkongelf.TimeTracker;
+import se.njkongelf.db.entity.TimeSheet;
 import se.njkongelf.db.services.TimeSheetService;
 import se.njkongelf.model.Model;
 
@@ -23,6 +26,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,16 +76,28 @@ public class Controller {
   }
 
   public void initialize() {
+    boolean dbOnline = false;
     settingsfile = "conf/settings.properties";
     properties = model.readInSettingsFile(settingsfile);
     model.setProperties(properties);
-
+    context = TimeTracker.getContext();
+//    if (!context.getBeansOfType(MongoClient.class).size()>1) {
+//      dbOnline=true;
+//    }
+//    TimeSheetService shet = context.getBean(TimeSheetService.class);
+//    Optional<TimeSheet> timeSheet = Optional.ofNullable(shet.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
+//    if (timeSheet.isPresent()) {
+//      dbOnline = true;
+//    }
+    model.setDbonline(dbOnline);
     clockString = new SimpleStringProperty();
     clock.textProperty().bindBidirectional(clockString);
     overTimeString = new SimpleStringProperty();
     overTime.textProperty().bindBidirectional(overTimeString);
     model.setController(this);
-    model.setTimeSheetService(TimeTracker.getContext().getBean(TimeSheetService.class));
+//    if (dbOnline) {
+      model.setTimeSheetService(context.getBean(TimeSheetService.class));
+//    }
     timelist = new ArrayList<>();
     listviewObserv = FXCollections.observableArrayList();
     listView.itemsProperty().setValue(listviewObserv);

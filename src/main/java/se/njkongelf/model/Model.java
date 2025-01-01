@@ -1,13 +1,16 @@
 package se.njkongelf.model;
 
+import com.mongodb.MongoTimeoutException;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.util.converter.LongStringConverter;
 import lombok.Setter;
+import org.springframework.dao.DataAccessResourceFailureException;
 import se.njkongelf.controller.Controller;
 import se.njkongelf.db.entity.TimeSheet;
+import se.njkongelf.db.entity.TimeStamp;
 import se.njkongelf.db.services.TimeSheetService;
 
 import java.io.*;
@@ -17,7 +20,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -28,15 +31,8 @@ public class Model {
   private Controller controller;
   private Properties properties;
   private TimeSheetService timeSheetService;
-
-
-//  public void setProperties(Properties properties) {
-//    this.properties = properties;
-//  }
-//
-//  public void setController(Controller controller) {
-//    this.controller = controller;
-//  }
+  private TimeSheet timeSheet;
+  private boolean dbonline;
 
 
   public long calcUnEvenList(List<LocalDateTime> timelist, long time) {
@@ -65,14 +61,28 @@ public class Model {
 
   public void backup_File(List<LocalDateTime> timelist) throws IOException {
     if (timelist.size() > 0) {
-      try (FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + File.separator + "Timetracker" + File.separator + "Timetracked_"
-        + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".ttb")) {
-        for (LocalDateTime s : timelist) {
-          fileWriter.write(s.toEpochSecond(ZoneOffset.UTC) + "\n");
+      if (dbonline) {
+        updateDb(timelist);
+      } else {
+        try (FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + File.separator + "Timetracker" + File.separator + "Timetracked_"
+          + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".ttb")) {
+          for (LocalDateTime s : timelist) {
+            fileWriter.write(s.toEpochSecond(ZoneOffset.UTC) + "\n");
+          }
+          fileWriter.flush();
         }
-        fileWriter.flush();
-        fileWriter.close();
       }
+    }
+  }
+
+  private void updateDb(List<LocalDateTime> timelist) {
+    if (!timelist.isEmpty()) {
+      List<TimeStamp> tempList = new ArrayList<>();
+      timelist.forEach(time -> {
+        tempList.add(new TimeStamp(time));
+      });
+      timeSheet.setTimeStamps(tempList);
+      timeSheetService.updateTimeSheet(timeSheet);
     }
   }
 
@@ -94,55 +104,75 @@ public class Model {
                              ObservableList<String> listview,
                              AtomicLong calculatedTime,
                              TextField trackedTime) throws IOException {
-    Optional<TimeSheet> timeSheet = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
-    if (timeSheet.isEmpty()){
-      timeSheetService.createTimeSheet();
-    }
-    timeSheet = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
-    String file = System.getProperty("user.home")
-      + File.separator
-      + "Timetracker"
-      + File.separator
-      + "Timetracked_"
-      + LocalDateTime.now()
-      .format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
-      + ".ttb";
-    if (Files.exists(Paths.get(file), LinkOption.NOFOLLOW_LINKS)) {
-      FileReader stream = new FileReader(file);
-      BufferedReader streamReader = new BufferedReader(stream);
-      List<String> stringList = streamReader.lines().toList();
-      stringList.stream().forEach(s -> {
-        LongStringConverter longStringConverter = new LongStringConverter();
-        timelist.add(LocalDateTime
-          .ofEpochSecond(longStringConverter.fromString(s), 0, ZoneOffset.UTC));
-      });
-      timelist.stream().forEach(time -> {
-        listview.add(time
-          .format(DateTimeFormatter
-            .ofPattern("HH:mm:ss YYYY-MM-dd")));
-      });
-      long time = 0;
+    Optional<TimeSheet> timeSheetOptional = Optional.empty();
+    try {
 
-      if (timelist.size() > 0) {
-        calculatedTime.set(time);
-        controller.starWorktime();
+      timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
+      timeSheetOptional.ifPresentOrElse(data ->{
+        timeSheet = data;
+        dbonline = true;
+        Optional<List<TimeStamp>> timeStampList = Optional.ofNullable(data.getTimeStamps());
+        timeStampList.ifPresent( timeStamps -> {
+            timeStamps.forEach(timeStamp -> {
+              timelist.add(timeStamp.date());
+            });
+          transferTimelist(timelist, listview, calculatedTime, trackedTime);
+          });
+      },() -> {timeSheet= timeSheetService.createTimeSheet();
+        dbonline = true;});
+    } catch (MongoTimeoutException | DataAccessResourceFailureException ex) {
+      dbonline = false;
+      String file = System.getProperty("user.home")
+        + File.separator
+        + "Timetracker"
+        + File.separator
+        + "Timetracked_"
+        + LocalDateTime.now()
+        .format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
+        + ".ttb";
+      if (Files.exists(Paths.get(file), LinkOption.NOFOLLOW_LINKS)) {
+        FileReader stream = new FileReader(file);
+        BufferedReader streamReader = new BufferedReader(stream);
+        List<String> stringList = streamReader.lines().toList();
+        stringList.stream().forEach(s -> {
+          LongStringConverter longStringConverter = new LongStringConverter();
+          timelist.add(LocalDateTime
+            .ofEpochSecond(longStringConverter.fromString(s), 0, ZoneOffset.UTC));
+        });
+        transferTimelist(timelist, listview, calculatedTime, trackedTime);
       }
-      if (timelist.size() % 2 == 0) {
-        time = calcEvenlist(timelist, time);
-        calculatedTime.set(time);
-        controller.starWorktime();
-        trackedTime.setText(LocalDateTime
-          .ofEpochSecond(time, 0, ZoneOffset.UTC)
-          .format(DateTimeFormatter
-            .ofPattern("HH:mm:ss")));
-      } else {
-        time = calcUnEvenList(timelist, time);
-        calculatedTime.set(time);
-        trackedTime.setText(LocalDateTime
-          .ofEpochSecond(time, 0, ZoneOffset.UTC)
-          .format(DateTimeFormatter
-            .ofPattern("HH:mm:ss")));
-      }
+    }
+
+
+  }
+
+  private void transferTimelist(List<LocalDateTime> timelist, ObservableList<String> listview, AtomicLong calculatedTime, TextField trackedTime) {
+    timelist.stream().forEach(time -> {
+      listview.add(time
+        .format(DateTimeFormatter
+          .ofPattern("HH:mm:ss YYYY-MM-dd")));
+    });
+    long time = 0;
+
+    if (timelist.size() > 0) {
+      calculatedTime.set(time);
+      controller.starWorktime();
+    }
+    if (timelist.size() % 2 == 0) {
+      time = calcEvenlist(timelist, time);
+      calculatedTime.set(time);
+      controller.starWorktime();
+      trackedTime.setText(LocalDateTime
+        .ofEpochSecond(time, 0, ZoneOffset.UTC)
+        .format(DateTimeFormatter
+          .ofPattern("HH:mm:ss")));
+    } else {
+      time = calcUnEvenList(timelist, time);
+      calculatedTime.set(time);
+      trackedTime.setText(LocalDateTime
+        .ofEpochSecond(time, 0, ZoneOffset.UTC)
+        .format(DateTimeFormatter
+          .ofPattern("HH:mm:ss")));
     }
   }
 
