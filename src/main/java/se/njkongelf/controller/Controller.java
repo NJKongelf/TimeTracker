@@ -5,6 +5,8 @@ package se.njkongelf.controller;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -45,9 +47,13 @@ public class Controller {
   @FXML
   private ListView<String> listView;
   @FXML
+  private ListView<String> listViewEdit;
+  @FXML
   private TextField trackedTime;
   @FXML
   private TextField clock;
+  @FXML
+  private TextField timeEditField;
   @FXML
   private TextField overTime;
   @FXML
@@ -62,6 +68,7 @@ public class Controller {
   private AtomicLong calculatedOverTime;
   private ExecutorService threadpool = Executors.newFixedThreadPool(2);
   private ObservableList<String> listviewObserv;
+  private ObservableList<String> listviewEditObserv;
   private SimpleStringProperty clockString;
   private SimpleStringProperty overTimeString;
   private SimpleStringProperty trackedTimeString;
@@ -76,31 +83,22 @@ public class Controller {
   }
 
   public void initialize() {
-    boolean dbOnline = false;
     settingsfile = "conf/settings.properties";
     properties = model.readInSettingsFile(settingsfile);
     model.setProperties(properties);
     context = TimeTracker.getContext();
-//    if (!context.getBeansOfType(MongoClient.class).size()>1) {
-//      dbOnline=true;
-//    }
-//    TimeSheetService shet = context.getBean(TimeSheetService.class);
-//    Optional<TimeSheet> timeSheet = Optional.ofNullable(shet.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
-//    if (timeSheet.isPresent()) {
-//      dbOnline = true;
-//    }
-    model.setDbonline(dbOnline);
+    model.setDbonline(false);
     clockString = new SimpleStringProperty();
     clock.textProperty().bindBidirectional(clockString);
     overTimeString = new SimpleStringProperty();
     overTime.textProperty().bindBidirectional(overTimeString);
     model.setController(this);
-//    if (dbOnline) {
-      model.setTimeSheetService(context.getBean(TimeSheetService.class));
-//    }
+    model.setTimeSheetService(context.getBean(TimeSheetService.class));
     timelist = new ArrayList<>();
     listviewObserv = FXCollections.observableArrayList();
+    listviewEditObserv = FXCollections.observableArrayList();
     listView.itemsProperty().setValue(listviewObserv);
+    listViewEdit.itemsProperty().setValue(listviewEditObserv);
     workingHoursValue = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 24);
     workingHoursValueProperty = new SimpleIntegerProperty().asObject();
     workingHoursValueProperty.setValue(Integer.valueOf(properties.getProperty("workinghours")));
@@ -116,6 +114,15 @@ public class Controller {
       model.readBackupFile(timelist, listviewObserv, calculatedTime, trackedTime);
     } catch (IOException e) {
     }
+    listviewEditObserv.addAll(listviewObserv);
+    listViewEdit.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+    listViewEdit.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+      @Override
+      public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+        timeEditField.setText(newValue);
+      }
+    });
+    //timeEditField.textProperty().bindBidirectional(listViewEdit.getSelectionModel().selectionModeProperty());
     startClock(threadpool);
     setCalculatedOverTime();
   }
@@ -123,10 +130,12 @@ public class Controller {
   public void handleButton(ActionEvent event) {
     timelist.add(LocalDateTime.now());
     listviewObserv.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
+    listviewEditObserv.add(timelist.get(timelist.size() - 1).format(DateTimeFormatter.ofPattern("HH:mm:ss YYYY-MM-dd")));
     starWorktime();
     int items = listView.getItems().size();
     listView.scrollTo(items);
     listView.refresh();
+    listViewEdit.refresh();
   }
 
   public void exitOnclick(ActionEvent event) {
