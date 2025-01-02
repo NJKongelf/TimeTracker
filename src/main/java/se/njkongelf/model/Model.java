@@ -2,7 +2,6 @@ package se.njkongelf.model;
 
 import com.mongodb.MongoTimeoutException;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.util.converter.LongStringConverter;
@@ -33,6 +32,8 @@ public class Model {
   private TimeSheetService timeSheetService;
   private TimeSheet timeSheet;
   private boolean dbonline;
+  private static final String DATE_FORMAT = "yyyy-MM-dd";
+  private static final String TIME_FORMAT = "HH:mm:ss";
 
 
   public long calcUnEvenList(List<LocalDateTime> timelist, long time) {
@@ -65,7 +66,7 @@ public class Model {
         updateDb(timelist);
       } else {
         try (FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + File.separator + "Timetracker" + File.separator + "Timetracked_"
-          + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".ttb")) {
+          + LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + ".ttb")) {
           for (LocalDateTime s : timelist) {
             fileWriter.write(s.toEpochSecond(ZoneOffset.UTC) + "\n");
           }
@@ -89,12 +90,12 @@ public class Model {
   public void printToFile(List<LocalDateTime> timelist, AtomicLong calculatedTime) throws IOException {
     if (timelist.size() > 0) {
       FileWriter fileWriter = new FileWriter("Timetracked_"
-        + LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd")) + ".txt");
+        + LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + ".txt");
       for (LocalDateTime s : timelist) {
-        fileWriter.write(s.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\n");
+        fileWriter.write(s.format(DateTimeFormatter.ofPattern(TIME_FORMAT)) + "\n");
       }
       fileWriter.write("Tracked time: " + LocalDateTime.ofEpochSecond(calculatedTime.get(), 0, ZoneOffset.UTC)
-        .format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        .format(DateTimeFormatter.ofPattern(TIME_FORMAT)));
       fileWriter.flush();
       fileWriter.close();
     }
@@ -107,19 +108,21 @@ public class Model {
     Optional<TimeSheet> timeSheetOptional = Optional.empty();
     try {
 
-      timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))));
-      timeSheetOptional.ifPresentOrElse(data ->{
+      timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT))));
+      timeSheetOptional.ifPresentOrElse(data -> {
         timeSheet = data;
         dbonline = true;
         Optional<List<TimeStamp>> timeStampList = Optional.ofNullable(data.getTimeStamps());
-        timeStampList.ifPresent( timeStamps -> {
-            timeStamps.forEach(timeStamp -> {
-              timelist.add(timeStamp.date());
-            });
-          transferTimelist(timelist, listview, calculatedTime, trackedTime);
+        timeStampList.ifPresent(timeStamps -> {
+          timeStamps.forEach(timeStamp -> {
+            timelist.add(timeStamp.date());
           });
-      },() -> {timeSheet= timeSheetService.createTimeSheet();
-        dbonline = true;});
+          transferTimelist(timelist, listview, calculatedTime, trackedTime);
+        });
+      }, () -> {
+        timeSheet = timeSheetService.createTimeSheet();
+        dbonline = true;
+      });
     } catch (MongoTimeoutException | DataAccessResourceFailureException ex) {
       dbonline = false;
       String file = System.getProperty("user.home")
@@ -128,12 +131,13 @@ public class Model {
         + File.separator
         + "Timetracked_"
         + LocalDateTime.now()
-        .format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
+        .format(DateTimeFormatter.ofPattern(DATE_FORMAT))
         + ".ttb";
       if (Files.exists(Paths.get(file), LinkOption.NOFOLLOW_LINKS)) {
         FileReader stream = new FileReader(file);
         BufferedReader streamReader = new BufferedReader(stream);
         List<String> stringList = streamReader.lines().toList();
+        streamReader.close();
         stringList.stream().forEach(s -> {
           LongStringConverter longStringConverter = new LongStringConverter();
           timelist.add(LocalDateTime
@@ -147,10 +151,10 @@ public class Model {
   }
 
   private void transferTimelist(List<LocalDateTime> timelist, ObservableList<String> listview, AtomicLong calculatedTime, TextField trackedTime) {
-    timelist.stream().forEach(time -> {
+    timelist.forEach(time -> {
       listview.add(time
         .format(DateTimeFormatter
-          .ofPattern("HH:mm:ss YYYY-MM-dd")));
+          .ofPattern(String.format("%s %s", TIME_FORMAT, DATE_FORMAT))));
     });
     long time = 0;
 
@@ -165,44 +169,36 @@ public class Model {
       trackedTime.setText(LocalDateTime
         .ofEpochSecond(time, 0, ZoneOffset.UTC)
         .format(DateTimeFormatter
-          .ofPattern("HH:mm:ss")));
+          .ofPattern(TIME_FORMAT)));
     } else {
       time = calcUnEvenList(timelist, time);
       calculatedTime.set(time);
       trackedTime.setText(LocalDateTime
         .ofEpochSecond(time, 0, ZoneOffset.UTC)
         .format(DateTimeFormatter
-          .ofPattern("HH:mm:ss")));
+          .ofPattern(TIME_FORMAT)));
     }
   }
 
   public ChangeListener<Integer> spinngerListner() {
-    return new ChangeListener<Integer>() {
-      @Override
-      public void changed(ObservableValue<? extends Integer> observableValue, Integer integer, Integer t1) {
-        properties.setProperty("workinghours", observableValue.getValue().toString());
-      }
-    };
+    return (observableValue, integer, t1) -> properties.setProperty("workinghours", observableValue.getValue().toString());
   }
 
   public Properties readInSettingsFile(String path) {
     Properties prop = new Properties();
-    try {
-      prop.load(new FileInputStream(path));
-    } catch (IOException e) {
-//            throw new RuntimeException(e);
+
+    try (FileInputStream stream = new FileInputStream(path)) {
+      prop.load(stream);
+    } catch (IOException ignored) {
     }
     return prop;
   }
 
   public void saveSettings(String path) {
-    try {
-      FileOutputStream fos = new FileOutputStream(path);
+    try (FileOutputStream fos = new FileOutputStream(path);) {
       properties.store(fos, "Saving settings");
       fos.flush();
-      fos.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    } catch (IOException ignored) {
     }
 
   }

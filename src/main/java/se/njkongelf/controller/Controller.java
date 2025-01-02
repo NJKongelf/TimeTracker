@@ -1,7 +1,6 @@
 package se.njkongelf.controller;
 
 
-
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -15,9 +14,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import lombok.Data;
+import lombok.Setter;
 import org.springframework.context.ConfigurableApplicationContext;
 import se.njkongelf.TimeTracker;
-import se.njkongelf.db.entity.TimeSheet;
 import se.njkongelf.db.services.TimeSheetService;
 import se.njkongelf.model.Model;
 
@@ -28,12 +28,13 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 
 public class Controller {
   @FXML
@@ -63,7 +64,9 @@ public class Controller {
   private List<LocalDateTime> timelist;
   private AtomicBoolean runtrackedTime;
   private AtomicBoolean runOverTime;
+  @Setter
   private Stage stage;
+  private AtomicInteger listIndex;
   private AtomicLong calculatedTime;
   private AtomicLong calculatedOverTime;
   private ExecutorService threadpool = Executors.newFixedThreadPool(2);
@@ -106,6 +109,7 @@ public class Controller {
     workingHoursValue.valueProperty().bindBidirectional(workingHoursValueProperty);
     workingHoursValueProperty.addListener(model.spinngerListner());
     calculatedTime = new AtomicLong(0);
+    listIndex = new AtomicInteger(0);
     runtrackedTime = new AtomicBoolean(false);
     runOverTime = new AtomicBoolean(false);
     trackedTimeString = new SimpleStringProperty();
@@ -120,9 +124,11 @@ public class Controller {
       @Override
       public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
         timeEditField.setText(newValue);
+        listIndex.set(listViewEdit.getSelectionModel().getSelectedIndex());
+        System.out.println(listIndex.get());
       }
     });
-    //timeEditField.textProperty().bindBidirectional(listViewEdit.getSelectionModel().selectionModeProperty());
+
     startClock(threadpool);
     setCalculatedOverTime();
   }
@@ -185,10 +191,6 @@ public class Controller {
 
   protected void updateWorktime(String time) {
     trackedTimeString.set(time);
-  }
-
-  public void setStage(Stage stage) {
-    this.stage = stage;
   }
 
   private String currentTime() {

@@ -17,7 +17,7 @@ public class JavaFxInit extends Application {
   private Model model;
 
   private Parent loadFXML(String fxml) throws IOException {
-    Model model = new Model();
+    model = new Model();
     FXMLLoader fxmlLoader = new FXMLLoader();
     fxmlLoader.setController(new Controller(model));
     controller = fxmlLoader.getController();
@@ -43,6 +43,5 @@ public class JavaFxInit extends Application {
 
   public static void main(String[] args) {
     Application.launch(JavaFxInit.class,args);
-//              launch();
   }
 }
