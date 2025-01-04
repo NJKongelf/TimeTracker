@@ -14,11 +14,14 @@ module TimeTracker {
   requires spring.beans;
   requires com.querydsl.core;
   requires spring.tx;
-  opens se.njkongelf.db.entity to spring.core,spring.data.commons;
+  requires feign.core;
+  requires org.slf4j;
+  requires com.google.gson;
+  opens se.njkongelf.db.entity to spring.core, spring.data.commons, com.google.gson;
   opens se.njkongelf.db.services to spring.core, spring.beans;
   opens se.njkongelf.controller to javafx.fxml;
   opens se.njkongelf to javafx.fxml, spring.core, spring.beans;
-  opens se.njkongelf.db.config;
+  opens se.njkongelf.config;
   exports se.njkongelf;
 
 }

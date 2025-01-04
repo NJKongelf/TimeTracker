@@ -1,6 +1,8 @@
 package se.njkongelf.controller;
 
 
+import feign.FeignException;
+import javafx.application.Platform;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -12,17 +14,22 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.paint.Paint;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.Data;
 import lombok.Setter;
+import org.slf4j.Logger;
 import org.springframework.context.ConfigurableApplicationContext;
 import se.njkongelf.TimeTracker;
 import se.njkongelf.db.services.TimeSheetService;
+import se.njkongelf.feign.InternetCheckGoogle;
+import se.njkongelf.model.BackUpFileHandler;
 import se.njkongelf.model.Model;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -45,6 +52,8 @@ public class Controller {
   private Label timeWorked;
   @FXML
   private Label label_OverTime;
+  @FXML
+  private Label on_off_line;
   @FXML
   private ListView<String> listView;
   @FXML
@@ -79,10 +88,13 @@ public class Controller {
   private Properties properties;
   private String settingsfile;
   private ConfigurableApplicationContext context;
+  private BackUpFileHandler backUpFileHandler;
+  @Setter
+  private InternetCheckGoogle internetCheckGoogle;
 
   public Controller(Model model) {
     this.model = model;
-
+    this.backUpFileHandler = new BackUpFileHandler();
   }
 
   public void initialize() {
@@ -91,6 +103,8 @@ public class Controller {
     model.setProperties(properties);
     context = TimeTracker.getContext();
     model.setDbonline(false);
+    model.setFileHandler(backUpFileHandler);
+    model.setLogger((Logger) context.getBean("logBean"));
     clockString = new SimpleStringProperty();
     clock.textProperty().bindBidirectional(clockString);
     overTimeString = new SimpleStringProperty();
@@ -116,7 +130,7 @@ public class Controller {
     trackedTime.textProperty().bindBidirectional(trackedTimeString);
     try {
       model.readBackupFile(timelist, listviewObserv, calculatedTime, trackedTime);
-    } catch (IOException e) {
+    } catch (IOException ignored) {
     }
     listviewEditObserv.addAll(listviewObserv);
     listViewEdit.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -125,10 +139,35 @@ public class Controller {
       public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
         timeEditField.setText(newValue);
         listIndex.set(listViewEdit.getSelectionModel().getSelectedIndex());
-        System.out.println(listIndex.get());
+   //     System.out.println(listIndex.get());
       }
     });
-
+    Platform.runLater(() -> {
+      if (model.isDbonline()) {
+        on_off_line.setText("ONLINE");
+        on_off_line.setTextFill(Paint.valueOf("#09f507"));
+      }else {
+        on_off_line.setTextFill(Paint.valueOf("#f50707"));
+        on_off_line.setText("OFFLINE");
+      }
+    });
+    Platform.runLater(() ->{
+      List<String> oldBackupFiles= backUpFileHandler.backupFilesDates();
+      if (oldBackupFiles.isEmpty()){
+        System.out.println("no old files to process");
+      }else{
+        oldBackupFiles.forEach(System.out::println);
+      }
+    });
+    // TODO Fixa Azure Devops connection
+//    Platform.runLater( () -> {
+//      try {
+//        internetCheckGoogle.internetcheck();
+//        System.out.println("Internet available");
+//      }catch (FeignException e){
+//        System.out.println("No internet service available");
+//      }
+//    });
     startClock(threadpool);
     setCalculatedOverTime();
   }

@@ -8,7 +8,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.concurrent.CountDownLatch;
 
-@EnableAutoConfiguration(exclude={MongoAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = {MongoAutoConfiguration.class})
 @SpringBootApplication
 public class TimeTracker {
 
@@ -36,5 +36,5 @@ public class TimeTracker {
     }
     return context;
   }
- }
+}
 

@@ -1,26 +1,21 @@
-package se.njkongelf.db.config;
+package se.njkongelf.config;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoSocketOpenException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import com.mongodb.client.TransactionBody;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.net.ConnectException;
-
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 @Configuration
 public class DbMongoConfig {
-//  @Value("${spring.data.mongodb.host}")
-//  private String dbhost;
 
   @Value("${spring.data.mongodb.uri}")
   private String connectionString;

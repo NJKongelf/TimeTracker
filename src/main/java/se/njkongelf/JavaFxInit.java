@@ -1,5 +1,7 @@
 package se.njkongelf;
 
+import feign.Feign;
+import feign.codec.Decoder;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
@@ -7,6 +9,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import se.njkongelf.controller.Controller;
+import se.njkongelf.feign.InternetCheckGoogle;
 import se.njkongelf.model.Model;
 
 import java.io.IOException;
@@ -21,6 +24,7 @@ public class JavaFxInit extends Application {
     FXMLLoader fxmlLoader = new FXMLLoader();
     fxmlLoader.setController(new Controller(model));
     controller = fxmlLoader.getController();
+    controller.setInternetCheckGoogle(Feign.builder().target(InternetCheckGoogle.class,"http://www.google.com"));
     fxmlLoader.setLocation(TimeTracker.class.getResource("/" + fxml + ".fxml"));
     return fxmlLoader.load();
   }

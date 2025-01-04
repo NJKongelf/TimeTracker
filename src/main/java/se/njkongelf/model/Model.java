@@ -5,7 +5,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.util.converter.LongStringConverter;
+import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
 import org.springframework.dao.DataAccessResourceFailureException;
 import se.njkongelf.controller.Controller;
 import se.njkongelf.db.entity.TimeSheet;
@@ -15,6 +17,7 @@ import se.njkongelf.db.services.TimeSheetService;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 @Setter
 public class Model {
@@ -31,6 +35,9 @@ public class Model {
   private Properties properties;
   private TimeSheetService timeSheetService;
   private TimeSheet timeSheet;
+  private Logger logger;
+  private BackUpFileHandler fileHandler;
+  @Getter
   private boolean dbonline;
   private static final String DATE_FORMAT = "yyyy-MM-dd";
   private static final String TIME_FORMAT = "HH:mm:ss";
@@ -65,25 +72,15 @@ public class Model {
       if (dbonline) {
         updateDb(timelist);
       } else {
-        try (FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + File.separator + "Timetracker" + File.separator + "Timetracked_"
-          + LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + ".ttb")) {
-          for (LocalDateTime s : timelist) {
-            fileWriter.write(s.toEpochSecond(ZoneOffset.UTC) + "\n");
-          }
-          fileWriter.flush();
-        }
+        TimeSheet sheet = timeSheetService.offlineTimeSheet(timelist,null);
+        fileHandler.writeBackupFile(timeSheetService.jsonOfTimeSheet(sheet),sheet);
       }
     }
   }
 
   private void updateDb(List<LocalDateTime> timelist) {
     if (!timelist.isEmpty()) {
-      List<TimeStamp> tempList = new ArrayList<>();
-      timelist.forEach(time -> {
-        tempList.add(new TimeStamp(time));
-      });
-      timeSheet.setTimeStamps(tempList);
-      timeSheetService.updateTimeSheet(timeSheet);
+      timeSheetService.updateTimeSheet(timeSheetService.offlineTimeSheet(timelist,timeSheet));
     }
   }
 
@@ -106,6 +103,8 @@ public class Model {
                              AtomicLong calculatedTime,
                              TextField trackedTime) throws IOException {
     Optional<TimeSheet> timeSheetOptional = Optional.empty();
+    String todays_date = LocalDateTime.now()
+      .format(DateTimeFormatter.ofPattern(DATE_FORMAT));
     try {
 
       timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT))));
@@ -117,6 +116,15 @@ public class Model {
           timeStamps.forEach(timeStamp -> {
             timelist.add(timeStamp.date());
           });
+          if (fileHandler.localBackupExsist(todays_date)) {
+            try {
+              fileHandler.processLocalBackupFile(timelist,todays_date);
+              Files.delete(fileHandler.fileLocationUri(todays_date));
+              logger.info(String.format("%s deleted", fileHandler.fileLocation(todays_date)));
+            } catch (IOException e) {
+              logger.error(String.format("%s does not exsist", fileHandler.fileLocation(todays_date)));
+            }
+          }
           transferTimelist(timelist, listview, calculatedTime, trackedTime);
         });
       }, () -> {
@@ -125,30 +133,15 @@ public class Model {
       });
     } catch (MongoTimeoutException | DataAccessResourceFailureException ex) {
       dbonline = false;
-      String file = System.getProperty("user.home")
-        + File.separator
-        + "Timetracker"
-        + File.separator
-        + "Timetracked_"
-        + LocalDateTime.now()
-        .format(DateTimeFormatter.ofPattern(DATE_FORMAT))
-        + ".ttb";
-      if (Files.exists(Paths.get(file), LinkOption.NOFOLLOW_LINKS)) {
-        FileReader stream = new FileReader(file);
-        BufferedReader streamReader = new BufferedReader(stream);
-        List<String> stringList = streamReader.lines().toList();
-        streamReader.close();
-        stringList.stream().forEach(s -> {
-          LongStringConverter longStringConverter = new LongStringConverter();
-          timelist.add(LocalDateTime
-            .ofEpochSecond(longStringConverter.fromString(s), 0, ZoneOffset.UTC));
-        });
+      if (fileHandler.localBackupExsist(todays_date)) {
+        fileHandler.processLocalBackupFile(timelist,LocalDateTime.now()
+          .format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
         transferTimelist(timelist, listview, calculatedTime, trackedTime);
       }
     }
-
-
   }
+
+
 
   private void transferTimelist(List<LocalDateTime> timelist, ObservableList<String> listview, AtomicLong calculatedTime, TextField trackedTime) {
     timelist.forEach(time -> {
