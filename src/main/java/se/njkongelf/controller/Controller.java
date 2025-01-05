@@ -156,7 +156,7 @@ public class Controller {
       if (oldBackupFiles.isEmpty()){
         System.out.println("no old files to process");
       }else{
-        oldBackupFiles.forEach(System.out::println);
+        model.handleOldBackupFiles(oldBackupFiles);
       }
     });
     // TODO Fixa Azure Devops connection

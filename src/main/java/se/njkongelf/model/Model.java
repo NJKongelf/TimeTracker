@@ -4,7 +4,6 @@ import com.mongodb.MongoTimeoutException;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
-import javafx.util.converter.LongStringConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -14,20 +13,18 @@ import se.njkongelf.db.entity.TimeSheet;
 import se.njkongelf.db.entity.TimeStamp;
 import se.njkongelf.db.services.TimeSheetService;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 @Setter
 public class Model {
@@ -72,15 +69,15 @@ public class Model {
       if (dbonline) {
         updateDb(timelist);
       } else {
-        TimeSheet sheet = timeSheetService.offlineTimeSheet(timelist,null);
-        fileHandler.writeBackupFile(timeSheetService.jsonOfTimeSheet(sheet),sheet);
+        TimeSheet sheet = timeSheetService.offlineTimeSheet(timelist, null);
+        fileHandler.writeBackupFile(timeSheetService.jsonOfTimeSheet(sheet), sheet);
       }
     }
   }
 
   private void updateDb(List<LocalDateTime> timelist) {
     if (!timelist.isEmpty()) {
-      timeSheetService.updateTimeSheet(timeSheetService.offlineTimeSheet(timelist,timeSheet));
+      timeSheetService.updateTimeSheet(timeSheetService.offlineTimeSheet(timelist, timeSheet));
     }
   }
 
@@ -98,16 +95,40 @@ public class Model {
     }
   }
 
+  public void handleOldBackupFiles(List<String> dates) {
+    dates.forEach(date -> {
+      Optional<TimeSheet> timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(date));
+      try {
+        TimeSheet backupFile = fileHandler.readLocalFile(date);
+        timeSheetOptional.ifPresentOrElse(dbcopy -> {
+          //TODO: om Notes finns så överför dessa med
+          backupFile.getTimeStamps().forEach(timeStamp -> dbcopy.getTimeStamps().add(timeStamp));
+          timeSheetService.updateTimeSheet(dbcopy);
+        }, () -> timeSheetService.updateTimeSheet(backupFile));
+      } catch (IOException ignored) {}
+      try {
+        Files.delete(fileHandler.fileLocationUri(date));
+        logger.info(String.format("%s deleted", fileHandler.fileLocation(date)));
+      } catch (IOException e) {
+        logger.error(String.format("%s does not exsist", fileHandler.fileLocation(date)));
+      }
+    });
+  }
+
   public void readBackupFile(List<LocalDateTime> timelist,
                              ObservableList<String> listview,
                              AtomicLong calculatedTime,
                              TextField trackedTime) throws IOException {
-    Optional<TimeSheet> timeSheetOptional = Optional.empty();
     String todays_date = LocalDateTime.now()
       .format(DateTimeFormatter.ofPattern(DATE_FORMAT));
     try {
-
-      timeSheetOptional = Optional.ofNullable(timeSheetService.getWorkday(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FORMAT))));
+      Optional<TimeSheet> timeSheetOptional = Optional
+        .ofNullable(timeSheetService
+          .getWorkday(LocalDateTime
+            .now()
+            .format(DateTimeFormatter.ofPattern(DATE_FORMAT))
+          )
+        );
       timeSheetOptional.ifPresentOrElse(data -> {
         timeSheet = data;
         dbonline = true;
@@ -118,7 +139,7 @@ public class Model {
           });
           if (fileHandler.localBackupExsist(todays_date)) {
             try {
-              fileHandler.processLocalBackupFile(timelist,todays_date);
+              fileHandler.processLocalBackupFile(timelist, todays_date);
               Files.delete(fileHandler.fileLocationUri(todays_date));
               logger.info(String.format("%s deleted", fileHandler.fileLocation(todays_date)));
             } catch (IOException e) {
@@ -134,13 +155,12 @@ public class Model {
     } catch (MongoTimeoutException | DataAccessResourceFailureException ex) {
       dbonline = false;
       if (fileHandler.localBackupExsist(todays_date)) {
-        fileHandler.processLocalBackupFile(timelist,LocalDateTime.now()
+        fileHandler.processLocalBackupFile(timelist, LocalDateTime.now()
           .format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
         transferTimelist(timelist, listview, calculatedTime, trackedTime);
       }
     }
   }
-
 
 
   private void transferTimelist(List<LocalDateTime> timelist, ObservableList<String> listview, AtomicLong calculatedTime, TextField trackedTime) {
@@ -151,7 +171,7 @@ public class Model {
     });
     long time = 0;
 
-    if (timelist.size() > 0) {
+    if (!timelist.isEmpty()) {
       calculatedTime.set(time);
       controller.starWorktime();
     }

@@ -75,7 +75,7 @@
                               <Label fx:id="label_OverTime" layoutX="289.0" layoutY="121.0" text="OverTime" textFill="#1013ec" visible="false" />
                               <Label fx:id="on_off_line" layoutX="89.0" layoutY="286.0" text="" textFill="#09f507">
                                  <font>
-                                    <Font name="System Bold" size="24.0" />
+                                    <Font name="System Bold" size="10.0" />
                                  </font>
                               </Label>
 
