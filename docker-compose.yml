@@ -1,16 +1,16 @@
 # Use root/example as user/password credentials
 services:
 
-#  mongo:
-#    image: mongo
-# #   restart: always
-#    volumes:
-#      - ./db/data:/data/db
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: root
-#      MONGO_INITDB_ROOT_PASSWORD: dev
-#    ports:
-#      - 27017:27017
+  mongo:
+    image: mongo
+ #   restart: always
+    volumes:
+      - ./db/data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: dev
+    ports:
+      - 27017:27017
 
   mongo-express:
     image: mongo-express
@@ -20,5 +20,7 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: dev
-      ME_CONFIG_MONGODB_URL: mongodb://root:dev@192.168.1.122
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: "27017"
+#      ME_CONFIG_MONGODB_URL: mongodb://root:dev@127.0.0.1
       ME_CONFIG_BASICAUTH: false

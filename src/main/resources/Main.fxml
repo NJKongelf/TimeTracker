@@ -39,12 +39,13 @@
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/24" xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
       <children>
@@ -52,7 +53,7 @@
               <tabs>
                 <Tab text="Time">
                   <content>
-                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="172.0" prefWidth="598.0">
+                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="391.0" prefWidth="698.0">
                            <children>
                                <Label fx:id="timeWorked" layoutX="508.0" layoutY="22.0" prefHeight="22.0" prefWidth="106.0" text="Worked time" textFill="#ec1111" visible="false" />
                                <Label layoutX="289.0" layoutY="22.0" text="Current Time" />
@@ -78,6 +79,7 @@
                                     <Font name="System Bold" size="10.0" />
                                  </font>
                               </Label>
+                              <TextArea fx:id="timeNotes" layoutX="423.0" layoutY="161.0" prefHeight="105.0" prefWidth="202.0" wrapText="true" />
 
                            </children>
                         </AnchorPane>
@@ -88,8 +90,9 @@
                       <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
                               <ListView fx:id="listViewEdit" layoutX="21.0" layoutY="42.0" prefHeight="231.0" prefWidth="206.0" />
-                              <TextField fx:id="timeEditField" layoutX="355.0" layoutY="66.0" />
-                              <DatePicker layoutX="343.0" layoutY="113.0" showWeekNumbers="true" />
+                              <TextField fx:id="timeEditField" layoutX="276.0" layoutY="98.0" />
+                              <DatePicker fx:id="datePickerField" layoutX="254.0" layoutY="29.0" showWeekNumbers="true" />
+                              <ListView fx:id="listTimeStamsps" layoutX="276.0" layoutY="138.0" prefHeight="170.0" prefWidth="176.0" />
                            </children>
                         </AnchorPane>
                     </content>

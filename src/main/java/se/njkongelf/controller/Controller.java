@@ -1,7 +1,6 @@
 package se.njkongelf.controller;
 
 
-import feign.FeignException;
 import javafx.application.Platform;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -12,35 +11,43 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Paint;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import lombok.Data;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.springframework.context.ConfigurableApplicationContext;
 import se.njkongelf.TimeTracker;
+import se.njkongelf.db.entity.TimeSheet;
 import se.njkongelf.db.services.TimeSheetService;
+import se.njkongelf.enums.DateFormat;
 import se.njkongelf.feign.InternetCheckGoogle;
 import se.njkongelf.model.BackUpFileHandler;
 import se.njkongelf.model.Model;
 
+import java.awt.event.FocusEvent;
 import java.io.File;
 import java.io.IOException;
-import java.net.UnknownHostException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 
 
 public class Controller {
@@ -59,13 +66,19 @@ public class Controller {
   @FXML
   private ListView<String> listViewEdit;
   @FXML
+  private ListView<String> listTimeStamsps;
+  @FXML
   private TextField trackedTime;
   @FXML
   private TextField clock;
   @FXML
   private TextField timeEditField;
   @FXML
+  private DatePicker datePickerField;
+  @FXML
   private TextField overTime;
+  @FXML
+  private TextArea timeNotes;
   @FXML
   private Spinner<Integer> workingHours;
   private Property<Integer> workingHoursValueProperty;
@@ -81,9 +94,11 @@ public class Controller {
   private ExecutorService threadpool = Executors.newFixedThreadPool(2);
   private ObservableList<String> listviewObserv;
   private ObservableList<String> listviewEditObserv;
+  private ObservableList<String> listTimeStamspsObserv;
   private SimpleStringProperty clockString;
   private SimpleStringProperty overTimeString;
   private SimpleStringProperty trackedTimeString;
+  private SimpleStringProperty timeNotesString;
   private Model model;
   private Properties properties;
   private String settingsfile;
@@ -101,6 +116,15 @@ public class Controller {
     settingsfile = "conf/settings.properties";
     properties = model.readInSettingsFile(settingsfile);
     model.setProperties(properties);
+ //   timeNotes = new TextArea();
+    timeNotesString = new SimpleStringProperty();
+//    timeNotes.textProperty().addListener(new ChangeListener<String>() {
+//      @Override
+//      public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+//        System.out.println("changeed text "+newValue);
+//      }
+//    });
+    timeNotes.textProperty().bindBidirectional(timeNotesString);
     context = TimeTracker.getContext();
     model.setDbonline(false);
     model.setFileHandler(backUpFileHandler);
@@ -114,8 +138,11 @@ public class Controller {
     timelist = new ArrayList<>();
     listviewObserv = FXCollections.observableArrayList();
     listviewEditObserv = FXCollections.observableArrayList();
+    listTimeStamspsObserv = FXCollections.observableArrayList();
+    listTimeStamsps.itemsProperty().setValue(listTimeStamspsObserv);
     listView.itemsProperty().setValue(listviewObserv);
     listViewEdit.itemsProperty().setValue(listviewEditObserv);
+    datePickerField.setValue(LocalDate.now());
     workingHoursValue = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 24);
     workingHoursValueProperty = new SimpleIntegerProperty().asObject();
     workingHoursValueProperty.setValue(Integer.valueOf(properties.getProperty("workinghours")));
@@ -127,38 +154,83 @@ public class Controller {
     runtrackedTime = new AtomicBoolean(false);
     runOverTime = new AtomicBoolean(false);
     trackedTimeString = new SimpleStringProperty();
+    timeNotes.setWrapText(true);
+    timeNotes.setEditable(true);
+    timeNotes.setManaged(true);
     trackedTime.textProperty().bindBidirectional(trackedTimeString);
     try {
-      model.readBackupFile(timelist, listviewObserv, calculatedTime, trackedTime);
+      model.readBackupFile(timelist, listviewObserv, calculatedTime, trackedTime, timeNotesString);
     } catch (IOException ignored) {
     }
+    timeNotes.setText(timeNotesString.getValue());
     listviewEditObserv.addAll(listviewObserv);
+    listViewEdit.setDisable(true);
     listViewEdit.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-    listViewEdit.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-      @Override
-      public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-        timeEditField.setText(newValue);
-        listIndex.set(listViewEdit.getSelectionModel().getSelectedIndex());
-   //     System.out.println(listIndex.get());
-      }
+    listViewEdit.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+    //  timeEditField.setText(newValue);
+      listTimeStamspsObserv.clear();
+      Optional<TimeSheet> sheet = model.getWorkday(newValue);
+      sheet.ifPresent( timeSheet ->{
+        if (timeSheet.getTimeStamps() !=null){
+          timeSheet
+            .getTimeStamps()
+            .forEach(stamp -> listTimeStamspsObserv.add(stamp
+              .date()
+              .format(
+                DateTimeFormatter
+                  .ofPattern(DateFormat.TIME_FORMAT.getCode()
+                  )
+              )
+            )
+            );
+        }
+      } );
+    //  listTimeStamspsObserv.addAll(model.getWorkday(newValue));
+      listTimeStamsps.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+      listIndex.set(listViewEdit.getSelectionModel().getSelectedIndex());
+      //     System.out.println(listIndex.get());
     });
+    listTimeStamsps.setDisable(true);
     Platform.runLater(() -> {
       if (model.isDbonline()) {
         on_off_line.setText("ONLINE");
         on_off_line.setTextFill(Paint.valueOf("#09f507"));
-      }else {
+        listViewEdit.setDisable(false);
+        model.fillOldDatesToListviewEdit(listviewEditObserv);
+      } else {
         on_off_line.setTextFill(Paint.valueOf("#f50707"));
         on_off_line.setText("OFFLINE");
       }
     });
-    Platform.runLater(() ->{
-      List<String> oldBackupFiles= backUpFileHandler.backupFilesDates();
-      if (oldBackupFiles.isEmpty()){
+    Platform.runLater(() -> {
+      List<String> oldBackupFiles = backUpFileHandler.backupFilesDates();
+      if (oldBackupFiles.isEmpty()) {
         System.out.println("no old files to process");
-      }else{
+      } else {
         model.handleOldBackupFiles(oldBackupFiles);
       }
     });
+    datePickerField.setOnAction(event -> {
+      if (model.isDbonline()){
+        String selectedDate = datePickerField.getValue().format(DateTimeFormatter.ofPattern(DateFormat.DATE_FORMAT.getCode()));
+        if (listviewEditObserv.contains(selectedDate)) {
+          listViewEdit.getSelectionModel().select(listviewEditObserv.indexOf(selectedDate));
+
+        }else{
+          listViewEdit.getSelectionModel().clearSelection();
+          //timeEditField.setText("");
+        }
+
+      //  System.out.println();
+      //  System.out.println("Change list view here");
+      }
+    });
+//    Platform.runLater(() -> {
+//      System.out.println(timeNotes.getText());
+//      System.out.println(timeNotesString.get());
+//      timeNotes.requestLayout();
+//    });
     // TODO Fixa Azure Devops connection
 //    Platform.runLater( () -> {
 //      try {
@@ -168,6 +240,7 @@ public class Controller {
 //        System.out.println("No internet service available");
 //      }
 //    });
+    timeNotes.requestLayout();
     startClock(threadpool);
     setCalculatedOverTime();
   }
@@ -184,11 +257,11 @@ public class Controller {
   }
 
   public void exitOnclick(ActionEvent event) {
-
+    // System.out.println(timeNotesString);
     try {
       model.saveSettings(settingsfile);
       model.printToFile(timelist, calculatedTime);
-      model.backup_File(timelist);
+      model.backup_File(timelist, timeNotes.getText());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -251,6 +324,10 @@ public class Controller {
         return null;
       }
     });
+  }
+
+  public void timeNotesChanged(KeyEvent event) {
+    timeNotes.appendText(event.getCharacter());
   }
 
   public void saveFileDialog(ActionEvent actionEvent) {

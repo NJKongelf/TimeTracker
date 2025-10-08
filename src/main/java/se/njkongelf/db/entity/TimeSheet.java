@@ -15,5 +15,6 @@ public class TimeSheet {
   private String id;
   private String workday;
   private boolean active;
+  private String notes;
   private List<TimeStamp> timeStamps;
 }

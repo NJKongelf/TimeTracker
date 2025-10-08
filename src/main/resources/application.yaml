@@ -1,5 +1,6 @@
 spring:
   data:
     mongodb:
-      uri: "mongodb://root:dev@192.168.1.122/timetracker?authSource=admin"
+#      uri: "mongodb://root:dev@192.168.1.122/timetracker?authSource=admin"
+      uri: "mongodb://root:dev@127.0.0.1:27017/timetracker?authSource=admin"
 

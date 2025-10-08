@@ -17,7 +17,8 @@ module TimeTracker {
   requires feign.core;
   requires org.slf4j;
   requires com.google.gson;
-  opens se.njkongelf.db.entity to spring.core, spring.data.commons, com.google.gson;
+    requires java.desktop;
+    opens se.njkongelf.db.entity to spring.core, spring.data.commons, com.google.gson;
   opens se.njkongelf.db.services to spring.core, spring.beans;
   opens se.njkongelf.controller to javafx.fxml;
   opens se.njkongelf to javafx.fxml, spring.core, spring.beans;

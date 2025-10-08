@@ -70,12 +70,13 @@ public class BackUpFileHandler {
     return dates;
   }
 
-  public void processLocalBackupFile(List<LocalDateTime> timelist, String date)  {
+  public TimeSheet processLocalBackupFile(List<LocalDateTime> timelist, String date)  {
+    TimeSheet sheet = new TimeSheet();
     try {
-      TimeSheet sheet = readLocalFile(date);
+      sheet = readLocalFile(date);
       sheet.getTimeStamps().forEach(timeStamp -> timelist.add(timeStamp.date()));
     } catch (IOException ignored) {}
-
+    return sheet;
   }
   public TimeSheet readLocalFile(String date) throws IOException{
     Gson gson = new GsonBuilder()
